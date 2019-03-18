@@ -1,0 +1,124 @@
+{
+  "project_info": {
+    "project_number": "454023819029",
+    "firebase_url": "https://snacknord.firebaseio.com",
+    "project_id": "snacknord",
+    "storage_bucket": "snacknord.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454023819029:android:3a07b669eff679e4",
+        "android_client_info": {
+          "package_name": "com.Snacknord.snacknordAndroidFire"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "454023819029-gonlqp669k6lgu0c53m849jl23ra659f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSNeoxs7H2RJ67t7jL7ZbgxV_FCE7hrH8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454023819029:android:12b64c6aa29588a4",
+        "android_client_info": {
+          "package_name": "com.snacknord.snacknordandroid"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "454023819029-gonlqp669k6lgu0c53m849jl23ra659f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSNeoxs7H2RJ67t7jL7ZbgxV_FCE7hrH8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454023819029:android:1b6b002fa3c80ece",
+        "android_client_info": {
+          "package_name": "com.stefanjm.printertest"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "454023819029-km7ce5jpugea9lglrae3fg3kpv1e7m79.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.stefanjm.printertest",
+            "certificate_hash": "fe60249574b73af0cdef2aa669658a596463f957"
+          }
+        },
+        {
+          "client_id": "454023819029-gonlqp669k6lgu0c53m849jl23ra659f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSNeoxs7H2RJ67t7jL7ZbgxV_FCE7hrH8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "454023819029-gonlqp669k6lgu0c53m849jl23ra659f.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "454023819029-om5uhhv3j5rv9tmjpklcm209r9dtnkba.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.snacknord.SnackNord"
+              }
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
