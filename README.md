@@ -1,2 +1,3 @@
 # snacknordmobile
-Mobile app for snacknor
+Mobile app for SnackNord Postees written in React Native.
+Mainly for Android production, will see about future.
