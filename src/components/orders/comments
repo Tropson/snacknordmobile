@@ -1,0 +1,29 @@
+{/*<NavigationBar
+  componentRight={()=><ComponentRight/>}
+  componentCenter={()=><ComponentMiddle/>}
+  navigationBarStyle= {{ elevation:5, backgroundColor: '#8ad3e6'}}
+  statusBarStyle={{backgroundColor:'#8ad3e6',barStyle:'dark-content',transcluent:1}}
+ />
+<View style={this.state.deliveries>0?styles.middleContent:styles.middleSection}>
+   {this.state.deliveries>0?
+     <Text>{this.state.deliveries}</Text>
+     :
+     <View style={{alignItems: 'center',}}>
+       <Text style={styles.noDeliveryText}>No orders found</Text>
+       <Text style={styles.noDeliverySubText}>Refresh to check nearby orders.</Text>
+     </View>
+ }
+ </View>
+ <View style={styles.navbarBottom}>
+  <View style={styles.navbarIconsContainer}>
+    <TouchableOpacity>
+      <Image style={styles.navbarIcons} source={home}/>
+    </TouchableOpacity>
+    <TouchableOpacity>
+      <Image style={styles.navbarIcons} source={data}/>
+    </TouchableOpacity>
+    <TouchableOpacity>
+      <Image style={styles.navbarIcons} source={settings}/>
+    </TouchableOpacity>
+  </View>
+</View>*/}
