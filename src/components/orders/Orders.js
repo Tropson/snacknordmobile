@@ -10,6 +10,7 @@ const data=require('../../images/menu/data.png');
 const home=require('../../images/menu/home.png');
 const settings=require('../../images/menu/settings.png');
 const warning=require('../../images/warning.png');
+const orderImage=require('../../images/order.png');
 var counter=0;
 var orders=[];
 var savedNetwork='';
@@ -133,9 +134,9 @@ export default class Orders extends Component<Props> {
             this.state.deliveries.map(x=>{
               var text = `${x.order_id}\n${x.restaurant_name}`;
               return (
-                <TouchableOpacity onPress={()=>{Alert.alert('myAlert','myMessage',)}} activeOpacity={0.9} key={`box${x.order_id}`} style={styles.deliveryBox}>
+                <TouchableOpacity onPress={()=>{Alert.alert('Taking an order','Are you sure you want to take order "' + x.order_id + '"?',[{text: 'Nah',onPress: () => {},style: 'cancel'},{text:'Yeah!',onPress:()=>{this.setState({deliveries:0})},style:'ok'}])}} activeOpacity={0.9} key={`box${x.order_id}`} style={styles.deliveryBox}>
                   <View style={{flex:1,height: '100%',alignItems: 'center',justifyContent: 'center'}}>
-                    <Image source={warning} style={{width: '70%', resizeMode:'contain'}}/>
+                    <Image source={orderImage} style={{width: '130%', resizeMode:'contain'}}/>
                   </View>
                   <View style={{flex:3,height: '100%',alignItems: 'flex-start',justifyContent: 'center'}}>
                       <Text key={`text${x.order_id}`} style={styles.deliveryText}>{text}</Text>
