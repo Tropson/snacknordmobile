@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Alert,View,StatusBar,StyleSheet,Text,RefreshControl,ScrollView, TouchableOpacity, Image,BackHandler,ToastAndroid,NetInfo,ActivityIndicator} from 'react-native';
+import {AsyncStorage,Alert,View,StatusBar,StyleSheet,Text,RefreshControl,ScrollView, TouchableOpacity, Image,BackHandler,ToastAndroid,NetInfo,ActivityIndicator} from 'react-native';
 import RF from "react-native-responsive-fontsize";
 import firebase from "react-native-firebase";
 const db = firebase.firestore();
@@ -43,7 +43,6 @@ class Orders extends Component<Props> {
     {
       this.fetchData().then(x=>{
         this.setState({deliveries:x})
-        console.log(x);
         orders=x;
       }).catch(x=>{
         this.setState({deliveries:'unloaded'});
@@ -51,7 +50,6 @@ class Orders extends Component<Props> {
     }
     else
     {
-      console.log(orders);
       this.setState({network:savedNetwork})
       this.setState({deliveries:orders});
     }
@@ -73,7 +71,6 @@ class Orders extends Component<Props> {
   {
     return new Promise((resolve,reject)=>{
       NetInfo.getConnectionInfo().then(con=>{
-        console.log(con.type);
         if(con.type!='none' && con.type!='unknown')
         {
           this.setState({network:con.type});
@@ -101,14 +98,39 @@ class Orders extends Component<Props> {
       this.setState({refreshing: false});
     });
   }
+  checkOnAccept=()=>{
+    this.checkNetwork().then(x=>{
+      return true;
+    }).catch(x=>{
+      return false;
+    })
+  }
+  addOrderToActives=(id)=>{
+    return new Promise((resolve,reject)=>{
+      resolve();
+    })
+  }
+  takeOrder=(id)=>{
+    return new Promise(async (resolve,reject)=>{
+      var posteeMail=await AsyncStorage.getItem('email');
+      db.collection('Orders').doc(id).update(
+        {postee_name:posteeMail}
+      ).then(()=>{this.addOrderToActives(id).then(()=>{resolve()})}).catch(()=>{reject()})
+    });
+  }
   fetchData=()=>{
       return new Promise((resolve,reject)=>{
         this.checkNetwork().then(()=>{
           let docs=[];
           db.collection('Orders').get().then(snapShot=>{
+            var counter=snapShot.size;
             snapShot.forEach(x=>{
-              docs.push(x.data());
-              if(docs.length==snapShot.size)
+              if(x.data().postee_name=='null')
+              {
+                docs.push(x.data());
+              }
+              counter--;
+              if(counter==0)
               {
                 resolve(docs);
               }
@@ -135,7 +157,7 @@ class Orders extends Component<Props> {
             this.state.deliveries.map(x=>{
               var text = `${x.order_id}\n${x.restaurant_name}`;
               return (
-                <TouchableOpacity onPress={()=>{Alert.alert('Taking an order','Are you sure you want to take order "' + x.order_id + '"?',[{text: 'Nah',onPress: () => {},style: 'cancel'},{text:'Yeah!',onPress:()=>{navigate('Map',x)},style:'ok'}])}} activeOpacity={0.9} key={`box${x.order_id}`} style={styles.deliveryBox}>
+                <TouchableOpacity onPress={()=>{Alert.alert('Taking an order','Are you sure you want to take order "' + x.order_id + '"?',[{text: 'Nah',onPress: () => {},style: 'cancel'},{text:'Yeah!',onPress:()=>{this.takeOrder(x.order_id).then(()=>{navigate('Map',x)})},style:'ok'}])}} activeOpacity={0.9} key={`box${x.order_id}`} style={styles.deliveryBox}>
                   <View style={{flex:1,height: '100%',alignItems: 'center',justifyContent: 'center'}}>
                     <Image source={orderImage} style={{width: '130%', resizeMode:'contain'}}/>
                   </View>

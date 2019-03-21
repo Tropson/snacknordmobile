@@ -32,7 +32,7 @@ export default class Map extends Component<Props> {
     })
   }
   render(){
-    console.log(this.state.posteeLocation);
+    const { navigation } = this.props;
     return(
       <View style={styles.container}>
         <StatusBar translucent barStyle='dark-content' backgroundColor="rgba(0, 0, 0, 0.0)" animated />
@@ -45,13 +45,19 @@ export default class Map extends Component<Props> {
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
           }}>
-            <MapView.Marker coordinate={{latitude: this.state.posteeLocation.coords.latitude,longitude: this.state.posteeLocation.coords.longitude,}} title='A'/>
-            <MapView.Marker icon={<Image source={require('../../images/map_circle_blue.png')} style={{height:30,resizeMode:'contain'}}/>} coordinate={{latitude: this.state.restaurantLocation.coords.latitude,longitude: this.state.restaurantLocation.coords.longitude,}} title='B'/>
+            <MapView.Marker coordinate={{latitude: this.state.posteeLocation.coords.latitude,longitude: this.state.posteeLocation.coords.longitude,}} title='You'/>
+            <MapView.Marker icon={<Image source={marker} style={{width:'3%',resizeMode: 'contain'}}/>} coordinate={{latitude: this.state.restaurantLocation.coords.latitude,longitude: this.state.restaurantLocation.coords.longitude,}} title='Restaurant'/>
           </MapView>
           <View style={styles.controlContainer}>
-            <View style={styles.controlButton}>
-              <TouchableOpacity style={styles.testButton} key='label'>
-                <Text style={styles.testText}>And it works</Text>
+            <View style={styles.top}>
+              <TouchableOpacity activeOpacity={0.95} style={styles.testButton} key='label'>
+                <Text style={styles.testText}>{navigation.getParam('preparation_time')}</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.placeholder}></View>
+            <View style={styles.bottom}>
+              <TouchableOpacity activeOpacity={0.95} style={styles.testButton} key='label'>
+                <Text style={styles.testText}>Second button</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -86,15 +92,25 @@ const styles = StyleSheet.create({
     width:'100%',
     flex:1
   },
-  controlButton:{
-    flex:1,
+  top:{
+    flex:2,
     justifyContent:'center',
     alignItems:'center',
+    marginTop: '10%',
+  },
+  bottom:{
+    flex:1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholder:{
+    flex:8
   },
   testButton:{
-    height:30,
-    width:150,
-    backgroundColor:'blue',
+    height:60,
+    width:'70%',
+    borderRadius: 10,
+    backgroundColor:'#8ad3e6',
     justifyContent:'center',
     alignItems:'center'
   },

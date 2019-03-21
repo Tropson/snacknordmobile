@@ -55,7 +55,7 @@ export default class Login extends Component<Props> {
                 this.setState({wrong:'flex'});
               }
               else{
-                await AsyncStorage.multiSet([['uid',postee.data().uid],['email',postee.data().email]]);
+                await AsyncStorage.multiSet([['uid',postee.data().uid],['email',postee.data().email],['activeOrders','[]']]);
                 this.setState({loggingIn:true});
                 navigate('Appholder',{uid:user.user.uid});
               }
