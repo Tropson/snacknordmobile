@@ -17,6 +17,7 @@ import Settings from './src/components/settings/Settings';
 import Statistics from './src/components/statistics/Statistics';
 import Appholder from './src/components/appholder/Appholder';
 import AuthLoader from './src/components/login/AuthLoader';
+import Map from './src/components/map/Map';
 const handleCustomTransition = ({ scenes }) => {
   const prevScene = scenes[scenes.length - 2];
   const nextScene = scenes[scenes.length - 1];
@@ -41,6 +42,7 @@ const handleCustomTransition = ({ scenes }) => {
 const AppStack = createStackNavigator({
     Appholder: {screen:Appholder},
     Profile: {screen:Profile},
+    Map: {screen:Map},
 },
 {
   headerMode: 'none',

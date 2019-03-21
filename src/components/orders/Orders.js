@@ -4,6 +4,7 @@ import RF from "react-native-responsive-fontsize";
 import firebase from "react-native-firebase";
 const db = firebase.firestore();
 import { NavigationBar } from 'navigationbar-react-native';
+import { withNavigation } from 'react-navigation';
 type Props = {};
 const logo=require('../../images/menu/profile.png');
 const data=require('../../images/menu/data.png');
@@ -21,7 +22,7 @@ const ComponentMiddle=()=>{
     </View>
   );
 }
-export default class Orders extends Component<Props> {
+class Orders extends Component<Props> {
   static navigationOptions = {
       headerMode: 'none',
       navigationOptions: {
@@ -119,7 +120,7 @@ export default class Orders extends Component<Props> {
     })
   }
   render(){
-
+    const {navigate} = this.props.navigation;
     return (
      <View style={styles.container}>
        <ScrollView refreshControl={
@@ -134,7 +135,7 @@ export default class Orders extends Component<Props> {
             this.state.deliveries.map(x=>{
               var text = `${x.order_id}\n${x.restaurant_name}`;
               return (
-                <TouchableOpacity onPress={()=>{Alert.alert('Taking an order','Are you sure you want to take order "' + x.order_id + '"?',[{text: 'Nah',onPress: () => {},style: 'cancel'},{text:'Yeah!',onPress:()=>{this.setState({deliveries:0})},style:'ok'}])}} activeOpacity={0.9} key={`box${x.order_id}`} style={styles.deliveryBox}>
+                <TouchableOpacity onPress={()=>{Alert.alert('Taking an order','Are you sure you want to take order "' + x.order_id + '"?',[{text: 'Nah',onPress: () => {},style: 'cancel'},{text:'Yeah!',onPress:()=>{navigate('Map',x)},style:'ok'}])}} activeOpacity={0.9} key={`box${x.order_id}`} style={styles.deliveryBox}>
                   <View style={{flex:1,height: '100%',alignItems: 'center',justifyContent: 'center'}}>
                     <Image source={orderImage} style={{width: '130%', resizeMode:'contain'}}/>
                   </View>
@@ -260,3 +261,4 @@ const styles = StyleSheet.create({
     resizeMode: 'contain'
   },
 });
+export default withNavigation(Orders);
