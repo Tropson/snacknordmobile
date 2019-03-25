@@ -14,6 +14,7 @@ export default class Map extends Component<Props> {
       userLocation:{coords:{longitude:0,latitude:0}},
       restaurantName:'',
       userName:'',
+      timeLeft:'',
     }
   }
   componentDidMount(){
@@ -22,6 +23,19 @@ export default class Map extends Component<Props> {
       this.setState({posteeLocation:x});
     }).catch(error=>console.log(error));
     this.setState({restaurantLocation:{coords:{longitude:navigation.getParam('restaurant_geo').longitude,latitude:navigation.getParam('restaurant_geo').latitude}}});
+    this.startTimer();
+  }
+  startTimer=()=>{
+    setInterval(()=>{
+      const { navigation } = this.props;
+      var timeLeft=navigation.getParam('preparation_time') - Math.floor(Date.now() / 1000);
+      var hours = Math.floor(timeLeft / 3600);
+      timeLeft = timeLeft - hours * 3600;
+      var minutes = Math.floor(timeLeft / 60);
+      var seconds = Math.floor(timeLeft - minutes * 60);
+      var formatted = hours>0?`${hours>9?hours:`0${hours}`}:${minutes>9?minutes:`0${minutes}`}:${seconds>9?seconds:`0${seconds}`}`:`${minutes>9?minutes:`0${minutes}`}:${seconds>9?seconds:`0${seconds}`}`;
+      this.setState({timeLeft:formatted});
+    },1000);
   }
   getUserLocation = ()=>{
     return new Promise((resolve,reject)=>{
@@ -47,17 +61,18 @@ export default class Map extends Component<Props> {
           }}>
             <MapView.Marker coordinate={{latitude: this.state.posteeLocation.coords.latitude,longitude: this.state.posteeLocation.coords.longitude,}} title='You'/>
             <MapView.Marker icon={<Image source={marker} style={{width:'3%',resizeMode: 'contain'}}/>} coordinate={{latitude: this.state.restaurantLocation.coords.latitude,longitude: this.state.restaurantLocation.coords.longitude,}} title='Restaurant'/>
+            <MapView.Polyline coordinates={[{latitude: this.state.posteeLocation.coords.latitude,longitude: this.state.posteeLocation.coords.longitude,},{latitude: this.state.restaurantLocation.coords.latitude,longitude: this.state.restaurantLocation.coords.longitude,}]}/>
           </MapView>
           <View style={styles.controlContainer}>
             <View style={styles.top}>
-              <TouchableOpacity activeOpacity={0.95} style={styles.testButton} key='label'>
-                <Text style={styles.testText}>{navigation.getParam('preparation_time')}</Text>
+              <TouchableOpacity activeOpacity={0.8} style={styles.mapButton} key='label'>
+                <Text style={styles.mapButtonText}>Time left: {this.state.timeLeft}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.placeholder}></View>
             <View style={styles.bottom}>
-              <TouchableOpacity activeOpacity={0.95} style={styles.testButton} key='label'>
-                <Text style={styles.testText}>Second button</Text>
+              <TouchableOpacity activeOpacity={0.95} style={styles.mapButton} key='label'>
+                <Text style={styles.mapButtonText}>Second button</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -106,17 +121,18 @@ const styles = StyleSheet.create({
   placeholder:{
     flex:8
   },
-  testButton:{
+  mapButton:{
     height:60,
     width:'70%',
     borderRadius: 10,
-    backgroundColor:'#8ad3e6',
+    backgroundColor:'white',
     justifyContent:'center',
-    alignItems:'center'
+    alignItems:'center',
+    elevation:5,
   },
-  testText:{
+  mapButtonText:{
     fontSize:20,
-    color:'white',
+    color:'#8ad3e6',
     fontWeight:'bold'
   }
 });

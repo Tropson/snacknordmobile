@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import {AsyncStorage,Alert,View,StatusBar,StyleSheet,Text,RefreshControl,ScrollView, TouchableOpacity, Image,BackHandler,ToastAndroid,NetInfo,ActivityIndicator} from 'react-native';
 import RF from "react-native-responsive-fontsize";
 import firebase from "react-native-firebase";
+var geolib = require('geolib');
 const db = firebase.firestore();
 import { NavigationBar } from 'navigationbar-react-native';
 import { withNavigation } from 'react-navigation';
@@ -42,8 +43,14 @@ class Orders extends Component<Props> {
     if(orders.length==0)
     {
       this.fetchData().then(x=>{
-        this.setState({deliveries:x})
-        orders=x;
+        if(x==0)
+        {
+          this.setState({deliveries:x});
+        }
+        else {
+          this.setState({deliveries:x});
+          orders=x;
+        }
       }).catch(x=>{
         this.setState({deliveries:'unloaded'});
       });
@@ -66,6 +73,16 @@ class Orders extends Component<Props> {
       </View>);
     }
     else return null;
+  }
+  getPosteeDistance = (restaurantCoords)=>{
+    return new Promise((resolve,reject)=>{
+      navigator.geolocation.getCurrentPosition(position=>{
+        var userCoords = position.coords;
+        console.log(`User: ${JSON.stringify(userCoords)}`);
+        console.log(`Restaurant: ${JSON.stringify(restaurantCoords)}`);
+        resolve(geolib.getDistance(userCoords,restaurantCoords));
+      },error=>reject(error.message)),{ enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
+    })
   }
   checkNetwork=()=>
   {
@@ -90,9 +107,16 @@ class Orders extends Component<Props> {
   _onRefresh = () => {
     this.setState({refreshing: true});
     this.fetchData().then((x) => {
-      this.setState({deliveries:x})
-      orders=x;
-      this.setState({refreshing: false});
+      if(x==0)
+      {
+        this.setState({deliveries:x});
+        this.setState({refreshing: false});
+      }
+      else {
+        this.setState({deliveries:x});
+        this.setState({refreshing: false});
+        orders=x;
+      }
     }).catch(x=>{
       this.setState({deliveries:'unloaded'});
       this.setState({refreshing: false});
@@ -115,7 +139,7 @@ class Orders extends Component<Props> {
       var posteeMail=await AsyncStorage.getItem('email');
       db.collection('Orders').doc(id).update(
         {postee_name:posteeMail}
-      ).then(()=>{this.addOrderToActives(id).then(()=>{resolve()})}).catch(()=>{reject()})
+      ).then(()=>{this.addOrderToActives(id).then(()=>{this._onRefresh();resolve()})}).catch(()=>{reject()})
     });
   }
   fetchData=()=>{
@@ -124,16 +148,28 @@ class Orders extends Component<Props> {
           let docs=[];
           db.collection('Orders').get().then(snapShot=>{
             var counter=snapShot.size;
+            if(snapShot.size==0)
+            {
+              resolve(0);
+            }
             snapShot.forEach(x=>{
-              if(x.data().postee_name=='null')
-              {
-                docs.push(x.data());
-              }
-              counter--;
-              if(counter==0)
-              {
-                resolve(docs);
-              }
+              console.log(x.data());
+              this.getPosteeDistance({longitude:x.data().restaurant_geo.longitude,latitude:x.data().restaurant_geo.latitude}).then(distance=>{
+                console.log('Distance: ' + distance);
+                if(x.data().postee_name=='null' && distance<=6000)
+                {
+                  docs.push(x.data());
+                }
+                counter--;
+                if(counter==0)
+                {
+                  if(docs.length==0)
+                  {
+                    resolve(0);
+                  }
+                  resolve(docs);
+                }
+              }).catch(err=>{console.log(err)});
             })
           })
         }).catch((x)=>{
@@ -168,7 +204,7 @@ class Orders extends Component<Props> {
               )
             })
             :
-            this.state.deliveries===0?
+            this.state.deliveries==0?
             <View style={{alignItems: 'center',}}>
               <Text style={styles.noDeliveryText}>No orders found</Text>
               <Text style={styles.noDeliverySubText}>Refresh to check nearby orders.</Text>
@@ -253,13 +289,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   middleSection:{
-    backgroundColor: '#FAFAFA',
+    backgroundColor: 'white',
     flex:10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   middleContent:{
-    backgroundColor: '#FAFAFA',
+    backgroundColor: 'white',
     flex:10,
     alignItems: 'center',
     paddingTop: 20,
