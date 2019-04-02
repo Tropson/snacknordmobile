@@ -9,7 +9,16 @@ export default class AuthLoader extends Component<Props> {
   // Fetch the token from storage then navigate to our appropriate place
   _bootstrapAsync = async () => {
     const userToken = await AsyncStorage.getItem('uid');
-    this.props.navigation.navigate(userToken ? 'App' : 'Auth');
+    const delivery = await AsyncStorage.getItem('delivery');
+    if(userToken)
+    {
+      if(delivery)
+      {
+        this.props.navigation.navigate('Map');
+      }
+      else this.props.navigation.navigate('App');
+    }
+    else this.props.navigation.navigate('Auth');
   };
 
   // Render any loading content that you like here

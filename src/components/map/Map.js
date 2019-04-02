@@ -1,7 +1,8 @@
 import React, {Component} from 'react';
 import MapView from 'react-native-maps';
 import {Marker} from 'react-native-maps';
-import {Alert,View,StatusBar,StyleSheet,Image,TouchableOpacity,Text} from 'react-native';
+import MapViewDirections from 'react-native-maps-directions';
+import {AsyncStorage,Alert,View,StatusBar,StyleSheet,Image,TouchableOpacity,Text} from 'react-native';
 const mapStyle=require('./Style.json');
 type Props = {};
 const marker=require('../../images/map_circle_blue.png');
@@ -15,20 +16,32 @@ export default class Map extends Component<Props> {
       restaurantName:'',
       userName:'',
       timeLeft:'',
+      preparation_time:0,
     }
   }
   componentDidMount(){
-    const { navigation } = this.props;
-    this.getUserLocation().then(x=>{
-      this.setState({posteeLocation:x});
+    this.getSavedDelivery().then(x=>{
+      console.log(x.restaurant_geo._longitude);
+      console.log(x.restaurant_geo._latitude);
+      this.setState({restaurantLocation:{coords:{longitude:x.restaurant_geo._longitude,latitude:x.restaurant_geo._latitude}}});
+      this.setState({preparation_time:x.preparation_time});
+    })
+    this.getUserLocation().then(y=>{
+      this.setState({posteeLocation:y});
     }).catch(error=>console.log(error));
-    this.setState({restaurantLocation:{coords:{longitude:navigation.getParam('restaurant_geo').longitude,latitude:navigation.getParam('restaurant_geo').latitude}}});
+    this.watchLocation();
     this.startTimer();
+  }
+  getSavedDelivery=()=>{
+    return(new Promise(async (resolve,reject)=>{
+      var delivery = await AsyncStorage.getItem('delivery');
+      var deliveryObj=JSON.parse(delivery);
+      resolve(deliveryObj);
+    }));
   }
   startTimer=()=>{
     setInterval(()=>{
-      const { navigation } = this.props;
-      var timeLeft=navigation.getParam('preparation_time') - Math.floor(Date.now() / 1000);
+      var timeLeft=this.state.preparation_time - Math.floor(Date.now() / 1000);
       var hours = Math.floor(timeLeft / 3600);
       timeLeft = timeLeft - hours * 3600;
       var minutes = Math.floor(timeLeft / 60);
@@ -45,8 +58,12 @@ export default class Map extends Component<Props> {
       },error=>reject(error.message)),{ enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
     })
   }
+  watchLocation=()=>{
+    navigator.geolocation.watchPosition(position=>{
+      this.setState({posteeLocation:position});
+    },error=>{console.log(error.message)}),{enableHighAccuracy:true,timeout:20000,maximumAge:1000}
+  }
   render(){
-    const { navigation } = this.props;
     return(
       <View style={styles.container}>
         <StatusBar translucent barStyle='dark-content' backgroundColor="rgba(0, 0, 0, 0.0)" animated />
@@ -56,12 +73,19 @@ export default class Map extends Component<Props> {
           initialRegion={{
             latitude: this.state.posteeLocation.coords.latitude,
             longitude: this.state.posteeLocation.coords.longitude,
-            latitudeDelta: 0.0922,
+            latitudeDelta: 0.150,
             longitudeDelta: 0.0421,
           }}>
             <MapView.Marker coordinate={{latitude: this.state.posteeLocation.coords.latitude,longitude: this.state.posteeLocation.coords.longitude,}} title='You'/>
-            <MapView.Marker icon={<Image source={marker} style={{width:'3%',resizeMode: 'contain'}}/>} coordinate={{latitude: this.state.restaurantLocation.coords.latitude,longitude: this.state.restaurantLocation.coords.longitude,}} title='Restaurant'/>
-            <MapView.Polyline coordinates={[{latitude: this.state.posteeLocation.coords.latitude,longitude: this.state.posteeLocation.coords.longitude,},{latitude: this.state.restaurantLocation.coords.latitude,longitude: this.state.restaurantLocation.coords.longitude,}]}/>
+            <MapView.Marker image={require('../../images/map_circle_blue.png')} coordinate={{latitude: this.state.restaurantLocation.coords.latitude,longitude: this.state.restaurantLocation.coords.longitude,}} title='Restaurant'/>
+            <MapViewDirections
+                origin={{latitude:this.state.posteeLocation.coords.latitude,longitude:this.state.posteeLocation.coords.longitude}}
+                destination={{latitude:this.state.restaurantLocation.coords.latitude,longitude:this.state.restaurantLocation.coords.longitude}}
+                apikey="AIzaSyBSNeoxs7H2RJ67t7jL7ZbgxV_FCE7hrH8"
+                strokeWidth={5}
+                strokeColor="#8ad3e6"
+                method="bycycling"
+                />
           </MapView>
           <View style={styles.controlContainer}>
             <View style={styles.top}>

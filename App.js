@@ -42,7 +42,6 @@ const handleCustomTransition = ({ scenes }) => {
 const AppStack = createStackNavigator({
     Appholder: {screen:Appholder},
     Profile: {screen:Profile},
-    Map: {screen:Map},
 },
 {
   headerMode: 'none',
@@ -59,12 +58,22 @@ const AuthStack = createStackNavigator({
   navigationOptions: {
     headerVisible: false,
   }
+})
+const MapStack = createStackNavigator({
+  Map:{screen:Map},
+},
+{
+  headerMode:'none',
+  navigationOptions:{
+    headerVisible:false,
+  },
 });
 export default createAppContainer(createSwitchNavigator(
   {
     AuthLoading:AuthLoader,
     App:AppStack,
     Auth:AuthStack,
+    Map:MapStack,
   },
   {
     initialRouteName:'AuthLoading',
