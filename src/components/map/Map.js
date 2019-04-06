@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import MapView from 'react-native-maps';
 import {Marker} from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
+import RF from "react-native-responsive-fontsize";
 import {AsyncStorage,Alert,View,StatusBar,StyleSheet,Image,TouchableOpacity,Text} from 'react-native';
 const mapStyle=require('./Style.json');
 type Props = {};
@@ -21,10 +22,9 @@ export default class Map extends Component<Props> {
   }
   componentDidMount(){
     this.getSavedDelivery().then(x=>{
-      console.log(x.restaurant_geo._longitude);
-      console.log(x.restaurant_geo._latitude);
       this.setState({restaurantLocation:{coords:{longitude:x.restaurant_geo._longitude,latitude:x.restaurant_geo._latitude}}});
       this.setState({preparation_time:x.preparation_time});
+      this.setState({restaurant_name:x.restaurant_name});
     })
     this.getUserLocation().then(y=>{
       this.setState({posteeLocation:y});
@@ -63,6 +63,11 @@ export default class Map extends Component<Props> {
       this.setState({posteeLocation:position});
     },error=>{console.log(error.message)}),{enableHighAccuracy:true,timeout:20000,maximumAge:1000}
   }
+  deleteOrder=async ()=>{
+    let result = await AsyncStorage.removeItem('delivery');
+    this.props.navigation.navigate('AuthLoading');
+    return result;
+  }
   render(){
     return(
       <View style={styles.container}>
@@ -95,9 +100,22 @@ export default class Map extends Component<Props> {
             </View>
             <View style={styles.placeholder}></View>
             <View style={styles.bottom}>
-              <TouchableOpacity activeOpacity={0.95} style={styles.mapButton} key='label'>
-                <Text style={styles.mapButtonText}>Second button</Text>
-              </TouchableOpacity>
+              <View style={styles.box}>
+                <View style={styles.bottomDescriptionContainer}>
+                  <View style={styles.bottomRestaurantName}>
+                    <Text style={styles.bottomRestaurantText}>{this.state.restaurant_name}</Text>
+                  </View>
+                  <View style={styles.bottomTextContainer}>
+                    <Text style={styles.bottomText}>Distance</Text>
+                    <Text style={styles.bottomText}>Time</Text>
+                  </View>
+                </View>
+                <View style={styles.bottomButtonContainer}>
+                  <TouchableOpacity onPress={()=>{this.deleteOrder()}} activeOpacity={0.95} style={styles.mapButtonBottom} key='label'>
+                    <Text style={styles.mapButtonTextBottom}>Directions</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
           </View>
       </View>
@@ -113,6 +131,51 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'flex-end',
     alignItems: 'center',
+  },
+  box:{
+    height:'100%',
+    backgroundColor:'white',
+    elevation:4,
+    width:'100%',
+    flex:1,
+    justifyContent:'center',
+    alignItems:'center',
+  },
+  bottomDescriptionContainer:{
+    flex:2,
+    backgroundColor:'white',
+    width:'100%'
+  },
+  bottomButtonContainer:{
+    flex:1,
+    backgroundColor:'white',
+    width:'100%',
+    justifyContent:'center',
+    alignItems:'center',
+  },
+  bottomRestaurantName:{
+    width:'100%',
+    flex:2,
+    backgroundColor:'#8ad3e6',
+    justifyContent:'center',
+    alignItems:'center',
+  },
+  bottomRestaurantText:{
+    fontSize:RF(4),
+    color:'white',
+    fontWeight:'bold',
+  },
+  bottomTextContainer:{
+    flex:3,
+    width:'100%',
+    backgroundColor:'white',
+    justifyContent:'center',
+    alignItems:'center',
+  },
+  bottomText:{
+    color:'black',
+    fontWeight:'bold',
+    fontSize:RF(3.5),
   },
   map: {
     position: 'absolute',
@@ -138,9 +201,10 @@ const styles = StyleSheet.create({
     marginTop: '10%',
   },
   bottom:{
-    flex:1,
+    flex:3,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor:'white',
   },
   placeholder:{
     flex:8
@@ -154,9 +218,23 @@ const styles = StyleSheet.create({
     alignItems:'center',
     elevation:5,
   },
+  mapButtonBottom:{
+    height:40,
+    width:'30%',
+    borderRadius: 10,
+    backgroundColor:'#8ad3e6',
+    justifyContent:'center',
+    alignItems:'center',
+    elevation:5,
+  },
   mapButtonText:{
     fontSize:20,
     color:'#8ad3e6',
+    fontWeight:'bold'
+  },
+  mapButtonTextBottom:{
+    fontSize:20,
+    color:'white',
     fontWeight:'bold'
   }
 });

@@ -1,5 +1,7 @@
 import React, {Component} from 'react';
 import {AsyncStorage,View,ActivityIndicator,StatusBar,StyleSheet} from 'react-native';
+import firebase from "react-native-firebase";
+const db = firebase.firestore();
 export default class AuthLoader extends Component<Props> {
   constructor() {
     super();
@@ -12,15 +14,21 @@ export default class AuthLoader extends Component<Props> {
     const delivery = await AsyncStorage.getItem('delivery');
     if(userToken)
     {
-      if(delivery)
-      {
-        this.props.navigation.navigate('Map');
+      db.collection('Postees').doc(userToken).get().then(snap=>{
+        if (doc.exists) {
+          if(delivery)
+          {
+            this.props.navigation.navigate('Map');
+          }
+          else this.props.navigation.navigate('App');
+        }
+        else {
+          this.props.navigation.navigate("Auth");
       }
-      else this.props.navigation.navigate('App');
+      })
     }
     else this.props.navigation.navigate('Auth');
   };
-
   // Render any loading content that you like here
   render() {
     return (

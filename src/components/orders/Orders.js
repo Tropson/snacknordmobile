@@ -133,7 +133,7 @@ class Orders extends Component<Props> {
     return new Promise(async (resolve,reject)=>{
       db.collection('Orders').doc(id).get().then(async (snap)=>{
         await AsyncStorage.setItem('delivery', JSON.stringify(snap.data()));
-        resolve(snap.id);
+        resolve();
       })
     })
   }
@@ -142,7 +142,7 @@ class Orders extends Component<Props> {
       var posteeMail=await AsyncStorage.getItem('email');
       db.collection('Orders').doc(id).update(
         {postee_name:posteeMail}
-      ).then(()=>{this.addOrderToActives(id).then((resolvedId)=>{if(id==resolvedId){this._onRefresh();resolve()}})}).catch(()=>{reject()})
+      ).then(()=>{this.addOrderToActives(id).then(()=>{this._onRefresh();resolve()})}).catch(()=>{reject()})
     });
   }
   fetchData=()=>{
@@ -196,7 +196,7 @@ class Orders extends Component<Props> {
             this.state.deliveries.map(x=>{
               var text = `${x.order_id}\n${x.restaurant_name}`;
               return (
-                <TouchableOpacity onPress={()=>{Alert.alert('Taking an order','Are you sure you want to take order "' + x.order_id + '"?',[{text: 'Nah',onPress: () => {},style: 'cancel'},{text:'Yeah!',onPress:()=>{this.takeOrder(x.order_id).then(()=>{navigate('AuthLoader')})},style:'ok'}])}} activeOpacity={0.9} key={`box${x.order_id}`} style={styles.deliveryBox}>
+                <TouchableOpacity onPress={()=>{Alert.alert('Taking an order','Are you sure you want to take order "' + x.order_id + '"?',[{text: 'Nah',onPress: () => {},style: 'cancel'},{text:'Yeah!',onPress:()=>{this.takeOrder(x.order_id).then(()=>{navigate('Map')})},style:'ok'}])}} activeOpacity={0.9} key={`box${x.order_id}`} style={styles.deliveryBox}>
                   <View style={{flex:1,height: '100%',alignItems: 'center',justifyContent: 'center'}}>
                     <Image source={orderImage} style={{width: '130%', resizeMode:'contain'}}/>
                   </View>
