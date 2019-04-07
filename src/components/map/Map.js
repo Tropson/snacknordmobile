@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import MapView from 'react-native-maps';
 import {Marker} from 'react-native-maps';
+var geolib = require('geolib');
 import MapViewDirections from 'react-native-maps-directions';
 import RF from "react-native-responsive-fontsize";
 import {AsyncStorage,Alert,View,StatusBar,StyleSheet,Image,TouchableOpacity,Text} from 'react-native';
@@ -18,6 +19,8 @@ export default class Map extends Component<Props> {
       userName:'',
       timeLeft:'',
       preparation_time:0,
+      distance:0,
+      distanceTime:0,
     }
   }
   componentDidMount(){
@@ -27,6 +30,7 @@ export default class Map extends Component<Props> {
       this.setState({restaurant_name:x.restaurant_name});
     })
     this.getUserLocation().then(y=>{
+      this.getPosteeDistance(this.state.restaurantLocation.coords,y).then(x=>this.setState({distance:x}));
       this.setState({posteeLocation:y});
     }).catch(error=>console.log(error));
     this.watchLocation();
@@ -68,6 +72,13 @@ export default class Map extends Component<Props> {
     this.props.navigation.navigate('AuthLoading');
     return result;
   }
+  getPosteeDistance = (restaurantCoords,userCoords)=>{
+    return new Promise((resolve,reject)=>{
+      console.log(userCoords.coords);
+      console.log(geolib.getDistance(userCoords.coords,restaurantCoords));
+      resolve(geolib.getDistance(userCoords.coords,restaurantCoords));
+    })
+  }
   render(){
     return(
       <View style={styles.container}>
@@ -75,13 +86,16 @@ export default class Map extends Component<Props> {
         <MapView
           style={styles.map}
           customMapStyle={mapStyle}
+          showsUserLocation={true}
+          followsUserLocation={true}
+          provider={"google"}
           initialRegion={{
             latitude: this.state.posteeLocation.coords.latitude,
             longitude: this.state.posteeLocation.coords.longitude,
             latitudeDelta: 0.150,
             longitudeDelta: 0.0421,
           }}>
-            <MapView.Marker coordinate={{latitude: this.state.posteeLocation.coords.latitude,longitude: this.state.posteeLocation.coords.longitude,}} title='You'/>
+            {/*<MapView.Marker coordinate={{latitude: this.state.posteeLocation.coords.latitude,longitude: this.state.posteeLocation.coords.longitude,}} title='You'/>*/}
             <MapView.Marker image={require('../../images/map_circle_blue.png')} coordinate={{latitude: this.state.restaurantLocation.coords.latitude,longitude: this.state.restaurantLocation.coords.longitude,}} title='Restaurant'/>
             <MapViewDirections
                 origin={{latitude:this.state.posteeLocation.coords.latitude,longitude:this.state.posteeLocation.coords.longitude}}
@@ -106,7 +120,7 @@ export default class Map extends Component<Props> {
                     <Text style={styles.bottomRestaurantText}>{this.state.restaurant_name}</Text>
                   </View>
                   <View style={styles.bottomTextContainer}>
-                    <Text style={styles.bottomText}>Distance</Text>
+                    <Text style={styles.bottomText}>Distance: {this.state.distance/1000}km</Text>
                     <Text style={styles.bottomText}>Time</Text>
                   </View>
                 </View>

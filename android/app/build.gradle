@@ -135,6 +135,7 @@ android {
 }
 
 dependencies {
+    implementation project(':react-native-system-setting')
     implementation project(':react-native-gesture-handler')
     implementation project(':react-native-firebase')
     implementation project(':react-native-maps')

@@ -15,7 +15,7 @@ export default class AuthLoader extends Component<Props> {
     if(userToken)
     {
       db.collection('Postees').doc(userToken).get().then(snap=>{
-        if (doc.exists) {
+        if (snap.exists) {
           if(delivery)
           {
             this.props.navigation.navigate('Map');

@@ -69,13 +69,13 @@ export default class Appholder extends Component<Props> {
         <View style={styles.navbarBottom}>
          <View style={styles.navbarIconsContainer}>
            <TouchableOpacity activeOpacity={0.7} onPress={()=>{this.setState({appComponent:myOrders,active:'Orders'})}}>
-             <Image style={styles.navbarIcons} tintColor={this.state.active=='Orders'?'black':'white'} source={home}/>
+             <Image style={styles.navbarIcons} tintColor={this.state.active=='Orders'?'white':'black'} source={home}/>
            </TouchableOpacity>
            <TouchableOpacity activeOpacity={0.7} onPress={()=>{this.setState({appComponent:myStatistics,active:'Statistics'})}}>
-             <Image style={styles.navbarIcons} tintColor={this.state.active=='Statistics'?'black':'white'} source={data}/>
+             <Image style={styles.navbarIcons} tintColor={this.state.active=='Statistics'?'white':'black'} source={data}/>
            </TouchableOpacity>
            <TouchableOpacity activeOpacity={0.7} onPress={()=>{this.setState({appComponent:mySettings,active:'Settings'})}}>
-             <Image style={styles.navbarIcons} tintColor={this.state.active=='Settings'?'black':'white'} source={settings}/>
+             <Image style={styles.navbarIcons} tintColor={this.state.active=='Settings'?'white':'black'} source={settings}/>
            </TouchableOpacity>
          </View>
        </View>

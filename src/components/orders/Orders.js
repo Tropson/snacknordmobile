@@ -6,6 +6,7 @@ var geolib = require('geolib');
 const db = firebase.firestore();
 import { NavigationBar } from 'navigationbar-react-native';
 import { withNavigation } from 'react-navigation';
+import SystemSetting from 'react-native-system-setting'
 type Props = {};
 const logo=require('../../images/menu/profile.png');
 const data=require('../../images/menu/data.png');
@@ -40,27 +41,56 @@ class Orders extends Component<Props> {
     }
   }
   componentDidMount(){
-    if(orders.length==0)
-    {
-      this.fetchData().then(x=>{
-        if(x==0)
+    SystemSetting.isLocationEnabled().then((enable)=>{
+      if(enable)
+      {
+        if(orders.length==0)
         {
-          this.setState({deliveries:x});
+          this.fetchData().then(x=>{
+            if(x==0)
+            {
+              this.setState({deliveries:x});
+            }
+            else {
+              this.setState({deliveries:x});
+              orders=x;
+            }
+          }).catch(x=>{
+            this.setState({deliveries:'unloaded'});
+          });
         }
-        else {
-          this.setState({deliveries:x});
-          orders=x;
+        else
+        {
+          this.setState({network:savedNetwork})
+          this.setState({deliveries:orders});
         }
-      }).catch(x=>{
-        this.setState({deliveries:'unloaded'});
-      });
-    }
-    else
-    {
-      this.setState({network:savedNetwork})
-      this.setState({deliveries:orders});
-    }
-  }
+      }
+      else{
+        SystemSetting.switchLocation(()=>{
+          if(orders.length==0)
+          {
+            this.fetchData().then(x=>{
+              if(x==0)
+              {
+                this.setState({deliveries:x});
+              }
+              else {
+                this.setState({deliveries:x});
+                orders=x;
+              }
+            }).catch(x=>{
+              this.setState({deliveries:'unloaded'});
+            });
+          }
+          else
+          {
+            this.setState({network:savedNetwork})
+            this.setState({deliveries:orders});
+          }
+        });
+      }
+    })
+  } 
   renderNoInternet()
   {
     if(this.state.network=='unknown' || this.state.network=='none')
@@ -78,8 +108,6 @@ class Orders extends Component<Props> {
     return new Promise((resolve,reject)=>{
       navigator.geolocation.getCurrentPosition(position=>{
         var userCoords = position.coords;
-        console.log(`User: ${JSON.stringify(userCoords)}`);
-        console.log(`Restaurant: ${JSON.stringify(restaurantCoords)}`);
         resolve(geolib.getDistance(userCoords,restaurantCoords));
       },error=>reject(error.message)),{ enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
     })

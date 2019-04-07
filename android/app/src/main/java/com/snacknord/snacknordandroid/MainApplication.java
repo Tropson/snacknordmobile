@@ -3,6 +3,7 @@ package com.snacknord.snacknordandroid;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
+import com.ninty.system.setting.SystemSettingPackage;
 import com.swmansion.gesturehandler.react.RNGestureHandlerPackage;
 import io.invertase.firebase.RNFirebasePackage;
 import io.invertase.firebase.firestore.RNFirebaseFirestorePackage;
@@ -28,6 +29,7 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
+            new SystemSettingPackage(),
             new RNGestureHandlerPackage(),
             new RNFirebasePackage(),
              new RNFirebaseFirestorePackage(),

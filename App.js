@@ -79,22 +79,3 @@ export default createAppContainer(createSwitchNavigator(
     initialRouteName:'AuthLoading',
   }
 ))
-// export default class App extends Component<Props> {
-//   constructor()
-//   {
-//     super();
-//     this.state={
-//       activeView:'Login',
-//     }
-//   }
-//   render() {
-//     if(this.state.activeView=='Login')
-//     {
-//
-//     }
-//     else if(this.state.activeView=='Orders')
-//     {
-//       return (<Orders />)
-//     }
-//   }
-// }
