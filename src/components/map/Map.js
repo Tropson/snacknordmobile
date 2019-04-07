@@ -4,7 +4,7 @@ import {Marker} from 'react-native-maps';
 var geolib = require('geolib');
 import MapViewDirections from 'react-native-maps-directions';
 import RF from "react-native-responsive-fontsize";
-import {AsyncStorage,Alert,View,StatusBar,StyleSheet,Image,TouchableOpacity,Text} from 'react-native';
+import {AsyncStorage,Alert,View,StatusBar,StyleSheet,Image,TouchableOpacity,Text,Linking} from 'react-native';
 const mapStyle=require('./Style.json');
 type Props = {};
 const marker=require('../../images/map_circle_blue.png');
@@ -15,12 +15,14 @@ export default class Map extends Component<Props> {
       posteeLocation:{coords:{longitude:0,latitude:0}},
       restaurantLocation:{coords:{longitude:0,latitude:0}},
       userLocation:{coords:{longitude:0,latitude:0}},
+      centerLocation:{coords:{longitude:0,latitude:0}},
       restaurantName:'',
       userName:'',
       timeLeft:'',
       preparation_time:0,
       distance:0,
       distanceTime:0,
+      orderId:'',
     }
   }
   componentDidMount(){
@@ -28,10 +30,13 @@ export default class Map extends Component<Props> {
       this.setState({restaurantLocation:{coords:{longitude:x.restaurant_geo._longitude,latitude:x.restaurant_geo._latitude}}});
       this.setState({preparation_time:x.preparation_time});
       this.setState({restaurant_name:x.restaurant_name});
+      this.setState({orderId:x.order_id});
     })
     this.getUserLocation().then(y=>{
-      this.getPosteeDistance(this.state.restaurantLocation.coords,y).then(x=>this.setState({distance:x}));
       this.setState({posteeLocation:y});
+      var center = geolib.getCenter([this.state.restaurantLocation.coords,y.coords]);
+      var centerLocation = {latitude:center.latitude*1,longitude:center.longitude*1};
+      this.setState({centerLocation:{coords:centerLocation}});
     }).catch(error=>console.log(error));
     this.watchLocation();
     this.startTimer();
@@ -72,12 +77,9 @@ export default class Map extends Component<Props> {
     this.props.navigation.navigate('AuthLoading');
     return result;
   }
-  getPosteeDistance = (restaurantCoords,userCoords)=>{
-    return new Promise((resolve,reject)=>{
-      console.log(userCoords.coords);
-      console.log(geolib.getDistance(userCoords.coords,restaurantCoords));
-      resolve(geolib.getDistance(userCoords.coords,restaurantCoords));
-    })
+  showDirections = ()=>{
+    var latLng=this.state.restaurantLocation.coords.latitude + '+' + this.state.restaurantLocation.coords.longitude;
+    Linking.openURL('google.navigation:q=' + latLng);
   }
   render(){
     return(
@@ -90,26 +92,34 @@ export default class Map extends Component<Props> {
           followsUserLocation={true}
           provider={"google"}
           initialRegion={{
-            latitude: this.state.posteeLocation.coords.latitude,
-            longitude: this.state.posteeLocation.coords.longitude,
-            latitudeDelta: 0.150,
+            latitude: this.state.centerLocation.coords.latitude+0.007,
+            longitude: this.state.centerLocation.coords.longitude,
+            latitudeDelta: 0.03,
             longitudeDelta: 0.0421,
           }}>
             {/*<MapView.Marker coordinate={{latitude: this.state.posteeLocation.coords.latitude,longitude: this.state.posteeLocation.coords.longitude,}} title='You'/>*/}
-            <MapView.Marker image={require('../../images/map_circle_blue.png')} coordinate={{latitude: this.state.restaurantLocation.coords.latitude,longitude: this.state.restaurantLocation.coords.longitude,}} title='Restaurant'/>
+            <MapView.Marker image={require('../../images/map_circle_blue.png')} coordinate={this.state.restaurantLocation.coords} title='Restaurant'/>
             <MapViewDirections
-                origin={{latitude:this.state.posteeLocation.coords.latitude,longitude:this.state.posteeLocation.coords.longitude}}
-                destination={{latitude:this.state.restaurantLocation.coords.latitude,longitude:this.state.restaurantLocation.coords.longitude}}
+                origin={this.state.posteeLocation.coords}
+                destination={this.state.restaurantLocation.coords}
                 apikey="AIzaSyBSNeoxs7H2RJ67t7jL7ZbgxV_FCE7hrH8"
                 strokeWidth={5}
                 strokeColor="#8ad3e6"
                 method="bycycling"
+                onReady={result=>{
+                  this.setState({distance:result.distance,distanceTime:result.duration});
+                }}
                 />
           </MapView>
           <View style={styles.controlContainer}>
             <View style={styles.top}>
               <TouchableOpacity activeOpacity={0.8} style={styles.mapButton} key='label'>
-                <Text style={styles.mapButtonText}>Time left: {this.state.timeLeft}</Text>
+                <View style={{flex:1,height:'80%',justifyContent:'center',paddingLeft:'3%'}}>
+                  <Text style={styles.mapButtonText}>Time left: {this.state.timeLeft}</Text>
+                </View>
+                <View style={{flex:1,height:'80%',justifyContent:'center',alignItems:'flex-end',paddingRight:'3%'}}>
+                  <Text style={styles.mapButtonText}>Order: {this.state.orderId.length<=7?this.state.orderId:this.state.orderId.substr(0,7) + '...'}</Text>
+                </View>
               </TouchableOpacity>
             </View>
             <View style={styles.placeholder}></View>
@@ -120,12 +130,12 @@ export default class Map extends Component<Props> {
                     <Text style={styles.bottomRestaurantText}>{this.state.restaurant_name}</Text>
                   </View>
                   <View style={styles.bottomTextContainer}>
-                    <Text style={styles.bottomText}>Distance: {this.state.distance/1000}km</Text>
-                    <Text style={styles.bottomText}>Time</Text>
+                    <Text style={styles.bottomText}>Distance: {this.state.distance}km</Text>
+                    <Text style={styles.bottomText}>Duration: {this.state.distanceTime.toFixed(0)} minutes</Text>
                   </View>
                 </View>
                 <View style={styles.bottomButtonContainer}>
-                  <TouchableOpacity onPress={()=>{this.deleteOrder()}} activeOpacity={0.95} style={styles.mapButtonBottom} key='label'>
+                  <TouchableOpacity onPress={()=>{this.showDirections()}} activeOpacity={0.95} style={styles.mapButtonBottom} key='label'>
                     <Text style={styles.mapButtonTextBottom}>Directions</Text>
                   </TouchableOpacity>
                 </View>
@@ -197,6 +207,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    marginBottom:'43%',
   },
   controlContainer:{
     position:'absolute',
@@ -231,6 +242,7 @@ const styles = StyleSheet.create({
     justifyContent:'center',
     alignItems:'center',
     elevation:5,
+    flexDirection:'row',
   },
   mapButtonBottom:{
     height:40,
