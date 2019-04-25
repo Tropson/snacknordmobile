@@ -1,55 +1,95 @@
 import React, {Component} from 'react';
-import MapView from 'react-native-maps';
+import MapView, { MapViewAnimated } from 'react-native-maps';
 import {Marker} from 'react-native-maps';
 var geolib = require('geolib');
+import firebase from 'react-native-firebase';
+var db = firebase.firestore();
 import MapViewDirections from 'react-native-maps-directions';
+import RNSwipeVerify from 'react-native-swipe-verify';
 import RF from "react-native-responsive-fontsize";
-import {AsyncStorage,Alert,View,StatusBar,StyleSheet,Image,TouchableOpacity,Text,Linking} from 'react-native';
+import {AsyncStorage,Alert,View,StatusBar,StyleSheet,Image,TouchableOpacity,Text,Linking,Dimensions,Animated,AppState} from 'react-native';
 const mapStyle=require('./Style.json');
 type Props = {};
+const { width } = Dimensions.get('window')
+var timer=0;
 const marker=require('../../images/map_circle_blue.png');
 export default class Map extends Component<Props> {
   constructor(){
     super();
     this.state={
       posteeLocation:{coords:{longitude:0,latitude:0}},
-      restaurantLocation:{coords:{longitude:0,latitude:0}},
+      destination:{coords:{longitude:0,latitude:0}},
       userLocation:{coords:{longitude:0,latitude:0}},
       centerLocation:{coords:{longitude:0,latitude:0}},
       restaurantName:'',
       userName:'',
       timeLeft:'',
       preparation_time:0,
-      distance:0,
+      distance:10000,
       distanceTime:0,
       orderId:'',
+      restaurant_approved:false,
+      swiped:false,
+      delivered:false,
+      bottomSize:{height:0,width:0,x:0,y:0},
+      appState: AppState.currentState,
     }
   }
   componentDidMount(){
     this.getSavedDelivery().then(x=>{
-      this.setState({restaurantLocation:{coords:{longitude:x.restaurant_geo._longitude,latitude:x.restaurant_geo._latitude}}});
+      var userLocation={coords:{longitude:x.user_geo._longitude,latitude:x.user_geo._latitude}};
+      this.setState({swiped:x.pickup_status})
+      this.setState({userName:x.user_address})
+      this.setState({userLocation:userLocation});
+      this.setState({destination:x.pickup_status?userLocation:{coords:{longitude:x.restaurant_geo._longitude,latitude:x.restaurant_geo._latitude}}});
       this.setState({preparation_time:x.preparation_time});
       this.setState({restaurant_name:x.restaurant_name});
       this.setState({orderId:x.order_id});
+      this.setState({restaurant_approved:x.restaurant_approved});
+      this.getUserLocation().then(y=>{
+        this.setState({posteeLocation:y});
+        var centerLocation = {latitude:y.coords.latitude*1,longitude:y.coords.longitude*1};
+        console.log(centerLocation);
+        this.setState({centerLocation:{coords:centerLocation}});
+      }).catch(error=>console.log(error));
     })
-    this.getUserLocation().then(y=>{
-      this.setState({posteeLocation:y});
-      var center = geolib.getCenter([this.state.restaurantLocation.coords,y.coords]);
-      var centerLocation = {latitude:center.latitude*1,longitude:center.longitude*1};
-      this.setState({centerLocation:{coords:centerLocation}});
-    }).catch(error=>console.log(error));
-    this.watchLocation();
     this.startTimer();
+    AppState.addEventListener('change', this.handleAppStateChange);
+  }
+  componentWillUnmount(){
+    this.stopListening().then(()=>{});
+    AppState.removeEventListener('change', this.handleAppStateChange);
+    clearInterval(timer);
   }
   getSavedDelivery=()=>{
     return(new Promise(async (resolve,reject)=>{
       var delivery = await AsyncStorage.getItem('delivery');
       var deliveryObj=JSON.parse(delivery);
-      resolve(deliveryObj);
+      db.collection('Orders').doc(deliveryObj.order_id).get().then(snap=>{
+        this.startListening(snap.data().order_id).then(()=>{
+          resolve(snap.data());
+        })
+      })
     }));
   }
+  startListening=(id)=>{
+    return new Promise((resolve,reject)=>{
+      db.collection('Orders').doc(id).onSnapshot(snap=>{
+        if(snap.exists)
+        {
+          this.setState({restaurant_approved:snap.data().restaurant_approved});
+        }
+        resolve();
+      })
+    })
+  }
+  stopListening=(id)=>{
+    return new Promise((resolve,reject)=>{
+      db.collection('Orders').doc(id).onSnapshot(()=>{});
+    })
+  }
   startTimer=()=>{
-    setInterval(()=>{
+    timer=setInterval(()=>{
       var timeLeft=this.state.preparation_time - Math.floor(Date.now() / 1000);
       var hours = Math.floor(timeLeft / 3600);
       timeLeft = timeLeft - hours * 3600;
@@ -67,26 +107,67 @@ export default class Map extends Component<Props> {
       },error=>reject(error.message)),{ enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
     })
   }
-  watchLocation=()=>{
-    navigator.geolocation.watchPosition(position=>{
-      this.setState({posteeLocation:position});
-    },error=>{console.log(error.message)}),{enableHighAccuracy:true,timeout:20000,maximumAge:1000}
-  }
   deleteOrder=async ()=>{
     let result = await AsyncStorage.removeItem('delivery');
     this.props.navigation.navigate('AuthLoading');
     return result;
   }
   showDirections = ()=>{
-    var latLng=this.state.restaurantLocation.coords.latitude + '+' + this.state.restaurantLocation.coords.longitude;
-    Linking.openURL('google.navigation:q=' + latLng);
+    var latLng=this.state.destination.coords.latitude + '+' + this.state.destination.coords.longitude;
+    Linking.openURL('google.navigation:q=' + latLng + '&mode=b');
   }
+  animateRegion=(region)=>{
+    this.map.animateToRegion(region,5000);
+  }
+  pickUp=()=>{
+    db.collection('Orders').doc(this.state.orderId).update(
+      {pickup_status:true}
+    ).then(()=>{
+      this.state.destination=this.state.userLocation;
+      this.setState({swiped:true});
+      this.swipeVerify3.reset();
+    })
+  }
+  finishDelivery=()=>{
+    var timeStamp = Math.floor(Date.now() / 1000);
+    db.collection('Orders').doc(this.state.orderId).get().then(x=>{
+      db.collection('Orders').doc(this.state.orderId).delete().then(()=>{
+        var newDoc=x.data();
+        console.log(newDoc);
+        db.collection('History').doc(x.id).set(newDoc).then(()=>{
+          db.collection('History').doc(x.id).update({end_time:timeStamp}).then(async ()=>{
+            let result = await AsyncStorage.removeItem('delivery');
+            this.props.navigation.navigate('AuthLoading');
+          })
+        })
+      })
+    })
+  }
+  changeMapMargin=(event)=>{
+    console.log(this.map);
+  }
+  handleAppStateChange = (nextAppState) => {
+    if (
+      this.state.appState.match(/inactive|background/) &&
+      nextAppState === 'active'
+    ) {
+      this.getUserLocation().then(y=>{
+        this.setState({posteeLocation:y});
+        var centerLocation = {latitude:y.coords.latitude*1,longitude:y.coords.longitude*1};
+        console.log(centerLocation);
+        this.setState({centerLocation:{coords:centerLocation}});
+      }).catch(error=>console.log(error));
+    }
+    this.setState({appState: nextAppState});
+  };
   render(){
     return(
       <View style={styles.container}>
         <StatusBar translucent barStyle='dark-content' backgroundColor="rgba(0, 0, 0, 0.0)" animated />
+        {this.state.destination.coords.longitude!=0&&this.state.centerLocation.coords.longitude!=0?
         <MapView
-          style={styles.map}
+          ref={ref => { this.map = ref; }}
+          style={[styles.map,{marginBottom:this.state.bottomSize.height}]}
           customMapStyle={mapStyle}
           showsUserLocation={true}
           followsUserLocation={true}
@@ -96,12 +177,21 @@ export default class Map extends Component<Props> {
             longitude: this.state.centerLocation.coords.longitude,
             latitudeDelta: 0.03,
             longitudeDelta: 0.0421,
+          }}
+          onMapReady={()=>{
+            console.log(this.state.centerLocation);
+            this.animateRegion({
+              latitude: this.state.centerLocation.coords.latitude+0.007,
+              longitude: this.state.centerLocation.coords.longitude,
+              latitudeDelta: 0.03,
+              longitudeDelta: 0.0421,
+            });
           }}>
             {/*<MapView.Marker coordinate={{latitude: this.state.posteeLocation.coords.latitude,longitude: this.state.posteeLocation.coords.longitude,}} title='You'/>*/}
-            <MapView.Marker image={require('../../images/map_circle_blue.png')} coordinate={this.state.restaurantLocation.coords} title='Restaurant'/>
+            <MapView.Marker coordinate={this.state.destination.coords} title='Restaurant'/>
             <MapViewDirections
                 origin={this.state.posteeLocation.coords}
-                destination={this.state.restaurantLocation.coords}
+                destination={this.state.destination.coords}
                 apikey="AIzaSyBSNeoxs7H2RJ67t7jL7ZbgxV_FCE7hrH8"
                 strokeWidth={5}
                 strokeColor="#8ad3e6"
@@ -110,7 +200,7 @@ export default class Map extends Component<Props> {
                   this.setState({distance:result.distance,distanceTime:result.duration});
                 }}
                 />
-          </MapView>
+          </MapView>:null}
           <View style={styles.controlContainer}>
             <View style={styles.top}>
               <TouchableOpacity activeOpacity={0.8} style={styles.mapButton} key='label'>
@@ -123,21 +213,62 @@ export default class Map extends Component<Props> {
               </TouchableOpacity>
             </View>
             <View style={styles.placeholder}></View>
-            <View style={styles.bottom}>
+            <View style={{flex:2,width:'100%',justifyContent:'flex-end',alignItems:'center'}}>
+              {this.state.restaurant_approved&&!this.state.swiped?<View style={{minHeight:60,justifyContent:"flex-end",width:'70%'}}>
+                <RNSwipeVerify
+                  style={{elevation:5}}
+                  ref={ref => this.swipeVerify2 = ref}
+                  width={width-50}
+                  buttonSize={50}
+                  buttonColor="#8ad3e6"
+                  backgroundColor={this.state.swiped?"#8ad3e6":"#fff"}
+                  icon={<Image source={require('../../images/map_blue.png')} style={{tintColor:'white',width:30,resizeMode:'contain'}}></Image>}
+                  textColor="#37474F"
+                  borderRadius={30}
+                  okButton={{ visible: true, duration: 400 }}
+                  onVerified={() => {
+                    this.setState({ swiped: true });
+                    this.pickUp();
+                  }}>
+                  <Text style={{fontWeight:'bold',color:this.state.swiped?'white':'#8ad3e6',fontSize:RF(3)}}>{this.state.swiped?'Good job! :)':'Ready to pickup'}</Text>
+                </RNSwipeVerify>
+              </View>:this.state.swiped&&!this.state.delivered?<View style={{minHeight:60,justifyContent:"flex-end",width:'70%'}}>
+                <RNSwipeVerify
+                  style={{elevation:5}}
+                  ref={ref => this.swipeVerify3 = ref}
+                  width={width-50}
+                  buttonSize={50}
+                  buttonColor="white"
+                  backgroundColor={this.state.swiped&&this.state.delivered?"#8ad3e6":"#8ad3e6"}
+                  icon={<Image source={require('../../images/map_blue.png')} style={{width:30,resizeMode:'contain'}}></Image>}
+                  textColor="#37474F"
+                  borderRadius={30}
+                  okButton={{ visible: true, duration: 400 }}
+                  onVerified={() => {
+                    this.setState({ delivered: true });
+                    this.finishDelivery();
+                  }}>
+                  <Text style={{fontWeight:'bold',color:this.state.swiped&&this.state.delivered?'white':'white',fontSize:RF(3)}}>{this.state.swiped&&this.state.delivered?'Amazing! :O':'Finished delivery'}</Text>
+                </RNSwipeVerify>
+              </View>:null}
+              </View>
+            <View style={styles.bottom} onLayout={(event)=>{this.setState({bottomSize:event.nativeEvent.layout})}}>
               <View style={styles.box}>
-                <View style={styles.bottomDescriptionContainer}>
-                  <View style={styles.bottomRestaurantName}>
-                    <Text style={styles.bottomRestaurantText}>{this.state.restaurant_name}</Text>
+                <View style={{flex:3,width:'100%'}}>
+                  <View style={styles.bottomDescriptionContainer}>
+                    <View style={styles.bottomRestaurantName}>
+                      <Text style={styles.bottomRestaurantText}>{this.state.swiped?this.state.userName:this.state.restaurant_name}</Text>
+                    </View>
+                    <View style={styles.bottomTextContainer}>
+                      <Text style={styles.bottomText}>Distance: {this.state.distance.toFixed(1)}km</Text>
+                      <Text style={styles.bottomText}>Duration: {this.state.distanceTime.toFixed(0)} minutes</Text>
+                    </View>
                   </View>
-                  <View style={styles.bottomTextContainer}>
-                    <Text style={styles.bottomText}>Distance: {this.state.distance}km</Text>
-                    <Text style={styles.bottomText}>Duration: {this.state.distanceTime.toFixed(0)} minutes</Text>
+                  <View style={styles.bottomButtonContainer}>
+                    <TouchableOpacity onPress={()=>{this.showDirections()}} activeOpacity={0.95} style={styles.mapButtonBottom} key='label'>
+                      <Text style={styles.mapButtonTextBottom}>Directions</Text>
+                    </TouchableOpacity>
                   </View>
-                </View>
-                <View style={styles.bottomButtonContainer}>
-                  <TouchableOpacity onPress={()=>{this.showDirections()}} activeOpacity={0.95} style={styles.mapButtonBottom} key='label'>
-                    <Text style={styles.mapButtonTextBottom}>Directions</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -158,7 +289,6 @@ const styles = StyleSheet.create({
   },
   box:{
     height:'100%',
-    backgroundColor:'white',
     elevation:4,
     width:'100%',
     flex:1,
@@ -207,7 +337,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    marginBottom:'43%',
   },
   controlContainer:{
     position:'absolute',
@@ -226,13 +355,12 @@ const styles = StyleSheet.create({
     marginTop: '10%',
   },
   bottom:{
-    flex:3,
+    flex:4,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor:'white',
   },
   placeholder:{
-    flex:8
+    flex:7
   },
   mapButton:{
     height:60,

@@ -112,8 +112,7 @@ class Orders extends Component<Props> {
       },error=>reject(error.message)),{ enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
     })
   }
-  checkNetwork=()=>
-  {
+  checkNetwork=()=>{
     return new Promise((resolve,reject)=>{
       NetInfo.getConnectionInfo().then(con=>{
         if(con.type!='none' && con.type!='unknown')
@@ -170,7 +169,7 @@ class Orders extends Component<Props> {
       var posteeMail=await AsyncStorage.getItem('email');
       db.collection('Orders').doc(id).update(
         {postee_name:posteeMail}
-      ).then(()=>{this.addOrderToActives(id).then(()=>{this._onRefresh();resolve()})}).catch(()=>{reject()})
+      ).then(()=>{this.addOrderToActives(id).then(async ()=>{await this._onRefresh();resolve()})}).catch(()=>{reject()})
     });
   }
   fetchData=()=>{
